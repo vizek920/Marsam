@@ -95,7 +95,7 @@ io.on('connection', (socket) => {
       id,
       name: name?.trim() || `غرفة ${id}`,
       isPublic: !!isPublic,
-      hostSocketId: socket.id,
+      hostSocketId: null,
       createdAt: Date.now(),
       users: {},
       layers: {},
@@ -115,14 +115,15 @@ io.on('connection', (socket) => {
     currentRoomId = roomId;
     socket.join(roomId);
 
-    const isHost = room.hostSocketId === socket.id || Object.keys(room.users).length === 0 && !room.hostSocketId;
+    if (!room.hostSocketId) room.hostSocketId = socket.id; // first real joiner becomes host
+    const isHost = room.hostSocketId === socket.id;
     const color = CURSOR_COLORS[Object.keys(room.users).length % CURSOR_COLORS.length];
 
     room.users[socket.id] = {
       username: (username || 'ضيف').slice(0, 24),
       color,
       canDraw: true,
-      isHost: room.hostSocketId === socket.id,
+      isHost,
     };
 
     // Personal layer for this user
