@@ -1,0 +1,154 @@
+/* ==========================================================================
+   Marsam — Design tokens
+   Palette: near-black ground, brushed-silver + aged-brass metallics,
+   deep emerald as the single warm "wet ink" accent.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0B0C0E;
+  --bg-panel: #15171A;
+  --bg-panel-2: #1C1F23;
+  --bg-panel-3: #23262B;
+
+  --silver: #B9B7AD;
+  --silver-bright: #E7E5DB;
+  --silver-dim: #6E6D66;
+
+  --brass: #A88A56;
+  --brass-bright: #C9A227;
+
+  --emerald: #2F5D50;
+  --emerald-bright: #3F7D6E;
+
+  --text: #EDEAE2;
+  --text-muted: #8B8A85;
+  --danger: #B24C3F;
+
+  --border: rgba(185, 183, 173, 0.14);
+  --border-bright: rgba(185, 183, 173, 0.28);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--emerald); color: var(--silver-bright); }
+
+a { color: inherit; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass-bright);
+  outline-offset: 2px;
+}
+
+.mono { font-family: var(--font-mono); letter-spacing: 0.04em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- Buttons ------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  padding: 0.9rem 1.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-bright);
+  background: var(--bg-panel-2);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), background 0.25s var(--ease);
+}
+
+.btn:hover { border-color: var(--brass-bright); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btn-primary {
+  background: linear-gradient(160deg, var(--emerald-bright), var(--emerald));
+  border-color: transparent;
+  color: var(--silver-bright);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 30px -8px rgba(63, 125, 110, 0.6);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+}
+
+.btn-ghost:hover { background: var(--bg-panel); }
+
+/* ---- Inputs ---------------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.field input {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: border-color 0.2s var(--ease);
+}
+
+.field input:focus {
+  border-color: var(--brass-bright);
+}
+
+.field input.mono {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  text-align: center;
+}
