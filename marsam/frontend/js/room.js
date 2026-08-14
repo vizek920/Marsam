@@ -114,6 +114,7 @@
   function pointerDown(e) {
     if (!canIDraw()) return;
     state.drawing = true;
+    state.movedDuringGesture = false;
     state.currentGestureId = `${socket.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     state.myGestureStack.push(state.currentGestureId);
     const p = e.touches ? e.touches[0] : e;
@@ -127,6 +128,7 @@
 
     if (!state.drawing || !canIDraw()) return;
     e.preventDefault?.();
+    state.movedDuringGesture = true;
     const seg = {
       id: state.currentGestureId,
       layerId: socket.id,
@@ -143,6 +145,20 @@
   }
 
   function pointerUp() {
+    if (state.drawing && !state.movedDuringGesture && state.lastPoint && canIDraw()) {
+      const seg = {
+        id: state.currentGestureId,
+        layerId: socket.id,
+        tool: state.tool,
+        color: state.color,
+        size: state.size,
+        x1: state.lastPoint.x, y1: state.lastPoint.y,
+        x2: state.lastPoint.x, y2: state.lastPoint.y,
+      };
+      state.strokes.push(seg);
+      if (!state.hiddenLayers.has(seg.layerId)) drawSegment(seg);
+      socket.emit('stroke', seg);
+    }
     state.drawing = false;
     state.lastPoint = null;
   }
