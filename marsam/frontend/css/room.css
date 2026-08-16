@@ -97,7 +97,7 @@ html, body.room-body {
   background-size: 26px 26px, auto;
 }
 
-.board { position: absolute; inset: 0; touch-action: none; cursor: crosshair; }
+.board { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
 
 .cursors-layer, .reactions-layer {
   position: absolute; inset: 0;
