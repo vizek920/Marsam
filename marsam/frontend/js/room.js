@@ -14,6 +14,12 @@
     return;
   }
 
+  let clientId = localStorage.getItem('marsam_client_id');
+  if (!clientId) {
+    clientId = `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem('marsam_client_id', clientId);
+  }
+
   const socket = io(window.MARSAM_BACKEND_URL, { transports: ['websocket', 'polling'] });
 
   const state = {
@@ -22,6 +28,7 @@
     users: {},         // socketId -> { username, color, canDraw, isHost }
     hiddenLayers: new Set(), // socketIds whose layer is hidden locally
     strokes: [],        // full stroke record list (fractional coords)
+    kicked: {},          // clientId -> username, people the host has banned
     myGestureStack: [],  // my own gesture ids, for undo
     currentGestureId: null,
     tool: 'brush',
@@ -261,23 +268,60 @@
   function renderPeoplePanel() {
     const body = document.getElementById('side-panel-body');
     const rows = Object.entries(state.users).map(([id, u]) => {
-      const canToggle = state.isHost && id !== socket.id;
+      const canManage = state.isHost && id !== socket.id;
+      const controls = canManage ? `
+          <span class="mini-toggle ${u.canDraw ? 'on' : ''}" data-action="toggle-draw" data-id="${id}" title="السماح/المنع من الرسم"><span class="dot"></span></span>
+          <input type="number" class="mini-timer-input" min="5" max="600" value="30" data-id="${id}" title="ثواني الرسم" />
+          <button class="mini-btn" data-action="timed-draw" data-id="${id}" title="أعطِه وقت رسم">⏱</button>
+          <button class="mini-btn danger" data-action="kick" data-id="${id}" title="طرد">🚫</button>
+        ` : `<span style="color:var(--text-muted);font-size:0.75rem;">${u.canDraw ? 'يرسم' : 'مشاهدة'}</span>`;
+
       return `
         <div class="panel-row" data-id="${id}">
           <span class="who">
             <span class="avatar-dot" style="background:${u.color}"></span>
             ${escapeHtml(u.username)} ${u.isHost ? '👑' : ''} ${id === socket.id ? '(أنت)' : ''}
           </span>
-          ${canToggle ? `<span class="mini-toggle ${u.canDraw ? 'on' : ''}" data-action="toggle-draw" data-id="${id}"><span class="dot"></span></span>` : `<span style="color:var(--text-muted);font-size:0.75rem;">${u.canDraw ? 'يرسم' : 'مشاهدة'}</span>`}
+          <span class="row-controls">${controls}</span>
         </div>`;
     }).join('');
-    body.innerHTML = rows || '<p style="color:var(--text-muted)">لا يوجد أحد بعد</p>';
+
+    const bannedRows = Object.entries(state.kicked || {}).map(([cid, uname]) => `
+      <div class="panel-row" data-cid="${cid}">
+        <span class="who">🚫 ${escapeHtml(uname)}</span>
+        ${state.isHost ? `<button class="mini-btn" data-action="unban" data-cid="${cid}">السماح بالعودة</button>` : ''}
+      </div>`).join('');
+
+    const bannedSection = bannedRows ? `
+      <div class="panel-section-title">مطرودون</div>
+      ${bannedRows}` : '';
+
+    body.innerHTML = (rows || '<p style="color:var(--text-muted)">لا يوجد أحد بعد</p>') + bannedSection;
 
     body.querySelectorAll('[data-action="toggle-draw"]').forEach((el) => {
       el.addEventListener('click', () => {
         const id = el.dataset.id;
-        const newVal = !state.users[id].canDraw;
-        socket.emit('set_permission', { targetId: id, canDraw: newVal });
+        socket.emit('set_permission', { targetId: id, canDraw: !state.users[id].canDraw });
+      });
+    });
+    body.querySelectorAll('[data-action="timed-draw"]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        const input = body.querySelector(`.mini-timer-input[data-id="${id}"]`);
+        const seconds = Math.max(5, Number(input.value) || 30);
+        socket.emit('set_permission_timed', { targetId: id, seconds });
+      });
+    });
+    body.querySelectorAll('[data-action="kick"]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        if (!confirm(`تأكيد طرد ${state.users[id]?.username || ''}؟`)) return;
+        socket.emit('kick_user', { targetId: id });
+      });
+    });
+    body.querySelectorAll('[data-action="unban"]').forEach((el) => {
+      el.addEventListener('click', () => {
+        socket.emit('unban_user', { clientId: el.dataset.cid });
       });
     });
   }
@@ -427,11 +471,25 @@
 
   // ---- Permission changes -----------------------------------------------
   const viewOnlyBadge = document.getElementById('view-only-badge');
-  socket.on('permission_changed', ({ targetId, canDraw }) => {
+  let permissionCountdownInterval = null;
+
+  socket.on('permission_changed', ({ targetId, canDraw, endsAt }) => {
     if (state.users[targetId]) state.users[targetId].canDraw = canDraw;
     if (targetId === socket.id) {
       state.me.canDraw = canDraw;
-      viewOnlyBadge.classList.toggle('hidden', canDraw);
+      clearInterval(permissionCountdownInterval);
+      if (canDraw && endsAt) {
+        viewOnlyBadge.classList.add('hidden');
+        permissionCountdownInterval = setInterval(() => {
+          const remaining = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
+          if (remaining <= 0) { clearInterval(permissionCountdownInterval); return; }
+        }, 1000);
+      } else if (!canDraw) {
+        viewOnlyBadge.textContent = '👁 وضع المشاهدة فقط';
+        viewOnlyBadge.classList.remove('hidden');
+      } else {
+        viewOnlyBadge.classList.add('hidden');
+      }
     }
     if (!sidePanel.classList.contains('hidden') && sidePanelTitle.textContent.includes('المشاركون')) renderPeoplePanel();
   });
@@ -472,9 +530,13 @@
 
   // ---- Join room --------------------------------------------------------
   socket.on('connect', () => {
-    socket.emit('join_room', { roomId, username }, (res) => {
+    socket.emit('join_room', { roomId, username, clientId }, (res) => {
       if (!res?.ok) {
-        alert('ما قدرنا نلقى هذه الغرفة. تأكد من الكود.');
+        if (res?.error === 'kicked') {
+          alert('تم طردك من هذه الغرفة من قبل المضيف. لا يمكنك الدخول حتى يسمح لك بالعودة.');
+        } else {
+          alert('ما قدرنا نلقى هذه الغرفة. تأكد من الكود.');
+        }
         location.href = 'index.html';
         return;
       }
@@ -482,6 +544,7 @@
       state.isHost = res.isHost;
       state.users = res.users;
       state.strokes = res.strokes || [];
+      state.kicked = res.kicked || {};
 
       document.getElementById('room-title').textContent = username ? `مرحبًا ${username}` : 'مرسم';
       document.getElementById('room-code-btn').textContent = roomId;
@@ -491,6 +554,16 @@
       if (state.isHost) injectChallengeButton();
       if (state.me.canDraw === false) viewOnlyBadge.classList.remove('hidden');
     });
+  });
+
+  socket.on('you_were_kicked', () => {
+    alert('تم طردك من الغرفة من قبل المضيف.');
+    location.href = 'index.html';
+  });
+
+  socket.on('ban_list_updated', ({ kicked }) => {
+    state.kicked = kicked || {};
+    if (!sidePanel.classList.contains('hidden') && sidePanelTitle.textContent.includes('المشاركون')) renderPeoplePanel();
   });
 
   function escapeHtml(str) {
