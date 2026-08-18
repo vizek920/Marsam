@@ -102,15 +102,22 @@ io.on('connection', (socket) => {
       strokes: [],
       replayLog: [],
       galleryEntry: null,
+      bannedClientIds: new Set(),
+      kickedInfo: {},   // clientId -> username, for the host's ban list UI
+      timers: {},       // socketId -> Timeout, for timed draw permissions
     };
     rooms[id] = room;
     cb?.({ ok: true, roomId: id });
     if (room.isPublic) broadcastRoomList();
   });
 
-  socket.on('join_room', ({ roomId, username }, cb) => {
+  socket.on('join_room', ({ roomId, username, clientId }, cb) => {
     const room = rooms[roomId];
     if (!room) return cb?.({ ok: false, error: 'room_not_found' });
+
+    if (clientId && room.bannedClientIds.has(clientId)) {
+      return cb?.({ ok: false, error: 'kicked' });
+    }
 
     currentRoomId = roomId;
     socket.join(roomId);
@@ -124,6 +131,7 @@ io.on('connection', (socket) => {
       color,
       canDraw: true,
       isHost,
+      clientId: clientId || null,
     };
 
     // Personal layer for this user
@@ -136,6 +144,7 @@ io.on('connection', (socket) => {
       layers: room.layers,
       strokes: room.strokes,
       isHost: room.hostSocketId === socket.id,
+      kicked: room.kickedInfo,
     });
 
     socket.to(roomId).emit('user_joined', { id: socket.id, ...room.users[socket.id] });
@@ -188,8 +197,64 @@ io.on('connection', (socket) => {
     const room = rooms[currentRoomId];
     if (!room || room.hostSocketId !== socket.id) return; // host only
     if (!room.users[targetId]) return;
+    clearTimeout(room.timers[targetId]);
+    delete room.timers[targetId];
     room.users[targetId].canDraw = canDraw;
     io.to(currentRoomId).emit('permission_changed', { targetId, canDraw });
+  });
+
+  // Host gives a specific person a timed drawing window; canDraw flips
+  // back to false automatically when it runs out.
+  socket.on('set_permission_timed', ({ targetId, seconds }) => {
+    const room = rooms[currentRoomId];
+    if (!room || room.hostSocketId !== socket.id) return; // host only
+    if (!room.users[targetId]) return;
+    const durationMs = Math.max(1, Number(seconds) || 0) * 1000;
+
+    clearTimeout(room.timers[targetId]);
+    room.users[targetId].canDraw = true;
+    const endsAt = Date.now() + durationMs;
+    io.to(currentRoomId).emit('permission_changed', { targetId, canDraw: true, endsAt });
+
+    room.timers[targetId] = setTimeout(() => {
+      if (!room.users[targetId]) return;
+      room.users[targetId].canDraw = false;
+      delete room.timers[targetId];
+      io.to(currentRoomId).emit('permission_changed', { targetId, canDraw: false });
+    }, durationMs);
+  });
+
+  // ---- Kick / ban ----
+  socket.on('kick_user', ({ targetId }) => {
+    const room = rooms[currentRoomId];
+    if (!room || room.hostSocketId !== socket.id) return; // host only
+    if (targetId === socket.id) return; // can't kick yourself
+    const target = room.users[targetId];
+    if (!target) return;
+
+    if (target.clientId) room.bannedClientIds.add(target.clientId);
+    room.kickedInfo[target.clientId || targetId] = target.username;
+
+    clearTimeout(room.timers[targetId]);
+    delete room.timers[targetId];
+
+    const targetSocket = io.sockets.sockets.get(targetId);
+    targetSocket?.emit('you_were_kicked');
+    targetSocket?.leave(currentRoomId);
+    targetSocket?.disconnect(true);
+
+    delete room.users[targetId];
+    delete room.layers[targetId];
+    io.to(currentRoomId).emit('presence_update', { users: room.users });
+    io.to(currentRoomId).emit('ban_list_updated', { kicked: room.kickedInfo });
+  });
+
+  socket.on('unban_user', ({ clientId }) => {
+    const room = rooms[currentRoomId];
+    if (!room || room.hostSocketId !== socket.id) return; // host only
+    room.bannedClientIds.delete(clientId);
+    delete room.kickedInfo[clientId];
+    io.to(currentRoomId).emit('ban_list_updated', { kicked: room.kickedInfo });
   });
 
   // ---- Quick-draw challenge (host-triggered) ----
@@ -217,6 +282,8 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const room = rooms[currentRoomId];
     if (!room) return;
+    clearTimeout(room.timers[socket.id]);
+    delete room.timers[socket.id];
     delete room.users[socket.id];
     delete room.layers[socket.id];
     socket.to(currentRoomId).emit('user_left', { id: socket.id });
