@@ -258,6 +258,40 @@ html, body.room-body {
 .mini-toggle.on { background: var(--emerald); }
 .mini-toggle.on .dot { transform: translateX(-16px); background: var(--silver-bright); }
 
+.row-controls { display: flex; align-items: center; gap: 0.35rem; }
+
+.mini-timer-input {
+  width: 46px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.3rem;
+  text-align: center;
+}
+
+.mini-btn {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  width: 28px; height: 28px;
+  font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.mini-btn:hover { border-color: var(--brass-bright); }
+.mini-btn.danger:hover { border-color: var(--danger); }
+
+.panel-section-title {
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
 /* ---- Modals ------------------------------------------------------- */
 
 .modal {
