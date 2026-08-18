@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>غرفة الرسم — مرسم</title>
+<link rel="icon" href="assets/logo.png" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/room.css" />
+</head>
+<body class="room-body">
+
+<header class="room-top">
+  <div class="room-top-left">
+    <img src="assets/logo.png" class="mini-logo" alt="" />
+    <div class="room-meta">
+      <span class="room-title" id="room-title">—</span>
+      <button class="room-code mono" id="room-code-btn" title="نسخ رابط المشاركة">—</button>
+    </div>
+  </div>
+
+  <div class="room-top-right">
+    <div class="presence-stack" id="presence-stack"></div>
+    <button class="icon-btn" id="btn-share" title="مشاركة سريعة">🔗</button>
+    <button class="icon-btn" id="btn-replay" title="إعادة تشغيل الرسم">⏱</button>
+    <button class="icon-btn" id="btn-layers" title="الطبقات">🗂</button>
+    <button class="icon-btn" id="btn-people" title="المشاركون والصلاحيات">👥</button>
+    <button class="icon-btn" id="btn-gallery" title="نشر في المعرض العام">🖼</button>
+  </div>
+</header>
+
+<div class="challenge-banner hidden" id="challenge-banner">
+  <span id="challenge-word"></span>
+  <span class="challenge-timer" id="challenge-timer"></span>
+</div>
+
+<div class="draw-timer-banner hidden" id="draw-timer-banner">
+  <span id="draw-timer-name"></span>
+  <span class="challenge-timer" id="draw-timer-countdown"></span>
+</div>
+
+<main class="board-wrap">
+  <canvas id="board" class="board"></canvas>
+  <div class="cursors-layer" id="cursors-layer"></div>
+  <div class="reactions-layer" id="reactions-layer"></div>
+
+  <div class="view-only-badge hidden" id="view-only-badge">👁 وضع المشاهدة فقط</div>
+</main>
+
+<footer class="toolbar">
+  <div class="tool-group">
+    <button class="tool active" data-tool="brush" title="فرشاة">🖌</button>
+    <button class="tool" data-tool="eraser" title="ممحاة">🧹</button>
+  </div>
+
+  <div class="tool-group colors" id="color-group">
+    <button class="swatch active" data-color="#EDEAE2" style="background:#EDEAE2"></button>
+    <button class="swatch" data-color="#C9A227" style="background:#C9A227"></button>
+    <button class="swatch" data-color="#3F7D6E" style="background:#3F7D6E"></button>
+    <button class="swatch" data-color="#B24C3F" style="background:#B24C3F"></button>
+    <button class="swatch" data-color="#5B6FA8" style="background:#5B6FA8"></button>
+    <button class="swatch" data-color="#8C5FA8" style="background:#8C5FA8"></button>
+    <input type="color" id="custom-color" class="swatch custom" value="#ffffff" title="لون مخصص" />
+  </div>
+
+  <div class="tool-group size-group">
+    <input type="range" id="brush-size" min="2" max="40" value="6" />
+  </div>
+
+  <div class="tool-group">
+    <button class="tool" id="btn-undo" title="تراجع">↩</button>
+    <button class="tool" id="btn-clear" title="مسح طبقتي">🗑</button>
+  </div>
+
+  <div class="tool-group reactions-picker" id="reactions-picker">
+    <button data-emoji="👏">👏</button>
+    <button data-emoji="🔥">🔥</button>
+    <button data-emoji="😂">😂</button>
+    <button data-emoji="❤️">❤️</button>
+  </div>
+</footer>
+
+<!-- Side panel: layers / people (shared container, swaps content) -->
+<aside class="side-panel hidden" id="side-panel">
+  <div class="side-panel-head">
+    <span id="side-panel-title">—</span>
+    <button class="icon-btn" id="side-panel-close">✕</button>
+  </div>
+  <div class="side-panel-body" id="side-panel-body"></div>
+</aside>
+
+<!-- Share modal -->
+<div class="modal hidden" id="share-modal">
+  <div class="modal-card">
+    <h3>شارك الغرفة</h3>
+    <div id="qr-holder" class="qr-holder"></div>
+    <div class="share-link-row">
+      <input type="text" id="share-link-input" class="mono" readonly />
+      <button class="btn btn-ghost" id="copy-link-btn">نسخ</button>
+    </div>
+    <button class="btn btn-primary btn-full" id="close-share-modal">تم</button>
+  </div>
+</div>
+
+<!-- Replay modal -->
+<div class="modal hidden" id="replay-modal">
+  <div class="modal-card modal-wide">
+    <h3>إعادة تشغيل الرسم</h3>
+    <canvas id="replay-canvas" class="replay-canvas"></canvas>
+    <div class="replay-controls">
+      <button class="btn btn-primary" id="replay-play-btn">▶ تشغيل</button>
+    </div>
+    <button class="btn btn-ghost btn-full" id="close-replay-modal">إغلاق</button>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/room.js"></script>
+</body>
+</html>
