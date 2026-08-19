@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>مرسم — لوحة رسم جماعية</title>
+<meta name="description" content="ارسموا سويًا، لحظة بلحظة، من أي مكان في العالم." />
+<link rel="icon" href="assets/logo.png" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/landing.css" />
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="ambient" aria-hidden="true"></div>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <img src="assets/logo.png" alt="" class="nav-logo" />
+    <span class="nav-word">مرسم</span>
+  </div>
+  <a class="nav-link" href="#gallery">المعرض العام</a>
+</nav>
+
+<main class="hero">
+  <div class="hero-medallion" aria-hidden="true">
+    <svg viewBox="0 0 200 240" class="sunburst" id="sunburst">
+      <ellipse cx="100" cy="120" rx="92" ry="112" class="ring" />
+      <path class="ray" d="M100 20 L100 130" />
+      <path class="ray" d="M74 24 L86 132" />
+      <path class="ray" d="M48 36 L74 138" />
+      <path class="ray" d="M26 56 L64 146" />
+      <path class="ray" d="M126 24 L114 132" />
+      <path class="ray" d="M152 36 L126 138" />
+      <path class="ray" d="M174 56 L136 146" />
+      <path class="arc" d="M46 150 A54 54 0 0 0 154 150" />
+    </svg>
+  </div>
+
+  <p class="eyebrow">لوحة رسم جماعية، مباشرة</p>
+  <h1 class="hero-title">ارسموا سويًا،<br /><span>من أي مكان.</span></h1>
+  <p class="hero-sub">افتحوا غرفة، شاركوا الرابط، وابدأوا الرسم على نفس اللوحة في نفس اللحظة — بلا تسجيل، بلا تعقيد.</p>
+
+  <div class="panel-tabs" role="tablist">
+    <button class="tab active" data-tab="create" role="tab" aria-selected="true">إنشاء غرفة</button>
+    <button class="tab" data-tab="join" role="tab" aria-selected="false">الانضمام لغرفة</button>
+  </div>
+
+  <div class="panel" id="panel-create">
+    <div class="field">
+      <label for="create-name">اسمك</label>
+      <input id="create-name" type="text" placeholder="مثال: سارة" maxlength="24" />
+    </div>
+    <div class="field">
+      <label for="room-name">اسم الغرفة (اختياري)</label>
+      <input id="room-name" type="text" placeholder="مثال: سهرة الخميس" maxlength="40" />
+    </div>
+    <label class="switch-row">
+      <span>غرفة عامة — تظهر لأي زائر</span>
+      <span class="switch">
+        <input type="checkbox" id="is-public" />
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </span>
+    </label>
+    <button class="btn btn-primary btn-full" id="btn-create">أنشئ الغرفة</button>
+  </div>
+
+  <div class="panel hidden" id="panel-join">
+    <div class="field">
+      <label for="join-name">اسمك</label>
+      <input id="join-name" type="text" placeholder="مثال: أحمد" maxlength="24" />
+    </div>
+    <div class="field">
+      <label for="join-code">كود الغرفة</label>
+      <input id="join-code" class="mono" type="text" placeholder="AB12CD" maxlength="6" />
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-join">ادخل الغرفة</button>
+    <p class="hint" id="join-error"></p>
+  </div>
+</main>
+
+<section class="public-rooms" id="gallery">
+  <h2>غرف عامة نشطة الآن</h2>
+  <div class="room-grid" id="public-room-grid">
+    <p class="empty-note">ما فيه غرف عامة مفتوحة حاليًا — كن أول من يفتح واحدة.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <img src="assets/logo.png" alt="مرسم" class="footer-logo" />
+  <p>مرسم — ارسم القصة، سويًا.</p>
+</footer>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/landing.js"></script>
+</body>
+</html>
